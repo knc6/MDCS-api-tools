@@ -1,0 +1,611 @@
+#! /usr/bin/env python
+import argparse
+import getpass
+import mdcs
+import json
+import sys
+
+#-------------------------------------------------------------------------------
+# functions
+#-------------------------------------------------------------------------------
+
+# get command line input
+def get_function_args():
+    parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
+    parser.add_argument(
+        "-url",
+        dest='host',
+        type=str,
+        required=True,
+        help='URL of the curator',
+        metavar='<url>')
+    parser.add_argument(
+        "-u",
+        dest='user',
+        type=str,
+        help='[optional] MDCS username if different from localhost',
+        metavar='<user>')
+    parser.add_argument(
+        "-cert",
+        dest='cert',
+        type=str,
+        default=None,
+        help='[optional] Certificate file\n\n',
+        metavar='<cert>')
+    parser.add_argument(
+        '-curate', 
+        action='store_true',
+        dest='curate',
+        help=
+'''Upload XML record:
+-tn <template name>
+-x <XML file name>
+-n <record name>
+
+''')
+    parser.add_argument(
+        '-blob', 
+        action='store_true',
+        dest='blob',
+        help=
+'''Upload file
+-f <file name>
+
+''')
+    parser.add_argument(
+        '-explore', 
+        action='store_true',
+        dest='explore',
+        help=
+'''Search and download XML record
+-tn <template name> [optional]
+-n <XML record name> [optional]
+-id <record id> [optional]
+-j [optional] Download record as JSON
+-x [optional] Download record as XML
+
+''')
+    parser.add_argument(
+        '-templates', 
+        action='store_true',
+        dest='templates',
+        help=
+'''Upload search and download templates
+-all       List all Templates
+-current   List Current Templates
+-find      Find a Template:
+           -n <template name or XSD file name>
+-add       Upload a Template:
+           -x <XSD file name>
+           -n <template name>
+           -v <version number>
+           -depend <id,id,id> list of dependent template ids no spaces
+-delete    Delete a Template:
+           -id <ID of template to delete>
+           -next <ID of template to be promoted to current> [optional]
+-restore   Restore a deleted Template:
+           -id <ID of template to restore>
+           
+''')
+    parser.add_argument(
+        '-types', 
+        action='store_true',
+        dest='types',
+        help=
+'''Upload search and download types
+-all       List all Types
+-current   List Current Types
+-find      Find a Type:
+           -n <type name or XSD file name>
+-add       Upload a Type:
+           -x <XSD file name>
+           -n <type name>
+           -v <version number>
+           -depend <id,id,id> list of dependent type ids no spaces
+-delete    Delete a Type:
+           -id <ID of type to delete>
+           -next <ID of type to be promoted to current> [optional]
+-restore   Restore a deleted Type:
+           -id <ID of type to restore>
+           
+''')
+    known_args, unknown_args = parser.parse_known_args()
+    args = vars(known_args)
+    
+    # curate command line input
+    if args['curate']:
+        parser.add_argument(
+            "-tn",
+            dest='template_name',
+            type=str,
+            required=True)
+        parser.add_argument(
+            "-x",
+            dest='xml_file',
+            type=str,
+            required=True)
+        parser.add_argument(
+            "-n",
+            dest='record_name',
+            type=str,
+            required=True)
+    
+    # blob command line input
+    if args['blob']:
+        parser.add_argument(
+            "-f" ,
+            dest='file',
+            type=str,
+            required=True)
+    
+    # explore command line input
+    if args['explore']:
+        parser.add_argument(
+            "-tn",
+            dest='template_name',
+            type=str,
+            default=None)
+        parser.add_argument(
+            "-n" ,
+            "--record-name",
+            dest='record_name',
+            type=str,
+            default=None)
+        parser.add_argument(
+            "--id",
+            dest='record_id',
+            type=str,
+            default=None)
+        parser.add_argument(
+            '-j', 
+            action='store_true',
+            dest='download_json')
+        parser.add_argument(
+            '-x', 
+            action='store_true',
+            dest='download_xml')
+    
+    # templates command line input
+    if args['templates']:
+        parser.add_argument(
+            '-add', 
+            action='store_true',
+            dest='templates_add')
+        parser.add_argument(
+            '-all', 
+            action='store_true',
+            dest='templates_all')
+        parser.add_argument(
+            '-current', 
+            action='store_true',
+            dest='templates_current')
+        parser.add_argument(
+            '-find', 
+            action='store_true',
+            dest='templates_find')
+        parser.add_argument(
+            '-delete', 
+            action='store_true',
+            dest='templates_delete')
+        parser.add_argument(
+            '-restore', 
+            action='store_true',
+            dest='templates_restore')
+        known_args, unknown_args = parser.parse_known_args()
+        args = vars(known_args)
+        
+        if args['templates_add']:
+            parser.add_argument(
+                "-x",
+                dest='xsd_file_name',
+                type=str,
+                required=True)
+            parser.add_argument(
+                "-n",
+                dest='template_name',
+                type=str,
+                required=True)
+            parser.add_argument(
+                "-v",
+                dest='version',
+                type=str,
+                default=None)
+            parser.add_argument(
+                "-depend",
+                dest='dependencies',
+                type=str,
+                default=None)
+        
+        if args['templates_find']:
+            parser.add_argument(
+                "-n",
+                dest='name',
+                type=str,
+                required=True)
+        
+        if args['templates_delete']:
+            parser.add_argument(
+                "-id",
+                dest='id',
+                type=str,
+                required=True)
+            parser.add_argument(
+                "-next",
+                dest='next',
+                type=str,
+                default=None)
+    
+        if args['templates_restore']:
+            parser.add_argument(
+                "-id",
+                dest='id',
+                type=str,
+                required=True)
+    
+    # types command line input
+    if args['types']:
+        parser.add_argument(
+            '-add', 
+            action='store_true',
+            dest='types_add')
+        parser.add_argument(
+            '-all', 
+            action='store_true',
+            dest='types_all')
+        parser.add_argument(
+            '-current', 
+            action='store_true',
+            dest='types_current')
+        parser.add_argument(
+            '-find', 
+            action='store_true',
+            dest='types_find')
+        parser.add_argument(
+            '-delete', 
+            action='store_true',
+            dest='types_delete')
+        parser.add_argument(
+            '-restore', 
+            action='store_true',
+            dest='types_restore')
+        known_args, unknown_args = parser.parse_known_args()
+        args = vars(known_args)
+        
+        if args['types_add']:
+            parser.add_argument(
+                "-x",
+                dest='xsd_file_name',
+                type=str,
+                required=True)
+            parser.add_argument(
+                "-n",
+                dest='type_name',
+                type=str,
+                required=True)
+            parser.add_argument(
+                "-v",
+                dest='version',
+                type=str,
+                default=None)
+            parser.add_argument(
+                "-depend",
+                dest='dependencies',
+                type=str,
+                default=None)
+        
+        if args['types_find']:
+            parser.add_argument(
+                "-n",
+                dest='name',
+                type=str,
+                required=True)
+        
+        if args['types_delete']:
+            parser.add_argument(
+                "-id",
+                dest='id',
+                type=str,
+                required=True)
+            parser.add_argument(
+                "-next",
+                dest='next',
+                type=str,
+                default=None)
+        
+        if args['types_restore']:
+            parser.add_argument(
+                "-id",
+                dest='id',
+                type=str,
+                required=True)
+    
+    
+    known_args, unknown_args = parser.parse_known_args()
+    args = vars(known_args)
+    
+    # get username and password
+    if args['user'] is None: args['user'] = getpass.getuser()
+    args['pswd'] = getpass.getpass()
+    
+    return args
+
+# write list of json results to disk
+def write_json_records(records):
+    for item in records:
+        content_title=item['title']
+        content_id=item['_id']
+        content=item['content']
+        content_root ,= content.keys()
+        fname=content_title+"."+content_root+"."+content_id+".json"
+        print "Saving file:",fname
+        with open(fname, "w") as f:
+            f.write("%s" % json.dumps(content,indent=4,separators=(',', ': ')))
+
+# write list of xml results to disk
+def write_xml_records(records):
+    for item in records:
+        content_title=item['title']
+        content_id=item['_id']
+        content=item['content']
+        content_root = content.split('\n')[1].split('>')[0].replace('<','')
+        fname=content_title+"."+content_root+"."+content_id+".xml"
+        print "Saving file:",fname
+        with open(fname, "w") as f:
+            f.write("%s" % content)
+
+# curate rest actions
+def curate(args):
+    response = mdcs.curate_as(
+        args['xml_file'],
+        args['record_name'],
+        args['host'],
+        args['user'],
+        args['pswd'],
+        cert=args['cert'],
+        template_title=args['template_name'])
+    if response==201:
+        print "Successful upload of:",args['xml_file']
+    else:
+        print "An error has occured:",response
+
+# blob rest actions
+def blob(args):
+    print mdcs.blob.upload(
+        args['file'],
+        args['host'],
+        args['user'],
+        args['pswd'],
+        cert=args['cert'])
+
+# explore rest actions
+def explore(args):
+    if any([args['template_name'],args['record_name'],args['record_id']]):
+        if not any([args['download_json'],args['download_xml']]):
+            records = mdcs.explore.select(
+                args['host'],
+                args['user'],
+                args['pswd'],
+                cert=args['cert'],
+                format='json',
+                ID=args['record_id'],
+                template=args['template_name'],
+                title=args['record_name'])
+            print "There are",len(records),"records in the repository."
+            delim = ":"
+            print "Title",delim,"root",delim,"record ID",delim,"template ID"
+            for item in records:
+                print item['title'],delim,item['content'].keys()[0],delim,item['_id'],delim,item['schema']
+        
+        if args['download_json']:
+            records = mdcs.explore.select(
+                args['host'],
+                args['user'],
+                args['pswd'],
+                cert=args['cert'],
+                format='json',
+                ID=args['record_id'],
+                template=args['template_name'],
+                title=args['record_name'])
+            write_json_records(records)
+        
+        if args['download_xml']:
+            records = mdcs.explore.select(
+                args['host'],
+                args['user'],
+                args['pswd'],
+                cert=args['cert'],
+                format='xml',
+                ID=args['record_id'],
+                template=args['template_name'],
+                title=args['record_name'])
+            write_xml_records(records)
+    else:
+        if not any([args['download_json'],args['download_xml']]):
+            records = mdcs.explore.select_all(
+                args['host'],
+                args['user'],
+                args['pswd'],
+                cert=args['cert'],
+                format='json')
+            print "There are",len(records),"records in the repository."
+            delim = ":"
+            print "Title",delim,"root",delim,"record ID",delim,"template ID"
+            for item in records:
+                print item['title'],delim,item['content'].keys()[0],delim,item['_id'],delim,item['schema']
+        
+        if args['download_json']:
+            records = mdcs.explore.select_all(
+                args['host'],
+                args['user'],
+                args['pswd'],
+                cert=args['cert'],
+                format='json')
+            write_json_records(records)
+        
+        if args['download_xml']:
+            records = mdcs.explore.select_all(
+                args['host'],
+                args['user'],
+                args['pswd'],
+                cert=args['cert'],
+                format='xml')
+            write_xml_records(records)
+
+# templates rest actions
+def templates(args):
+    if args['templates_add']:
+        response = mdcs.templates.add(
+            args['xsd_file_name'],
+            args['template_name'],
+            args['host'],
+            args['user'],
+            args['pswd'],
+            cert=args['cert'],
+            version=args['version'],
+            dependencies=args['dependencies'])
+        if response==201:
+            print "Successful upload of:",args['xsd_file_name']
+        else:
+            print "An error has occured:",response
+    
+    elif args['templates_all']:
+        templates = mdcs.templates.select_all(
+            args['host'],
+            args['user'],
+            args['pswd'],
+            cert=args['cert'])
+        print "There are",len(templates)," total templates in the repository."
+        delim = ":"
+        print "Title",delim,"filename",delim,"Template ID"
+        for t in templates:
+            print t['title'],delim,t['filename'],delim,t['id']
+    
+    elif args['templates_current']:
+        templates = mdcs.templates.select_current(
+            args['host'],
+            args['user'],
+            args['pswd'],
+            cert=args['cert'])
+        print "There are",len(templates)," current templates in the repository."
+        delim = ":"
+        print "Title",delim,"filename",delim,"Template ID"
+        for t in templates:
+            print t['title'],delim,t['filename'],delim,t['id']
+    
+    elif args['templates_find']:
+        template_id = mdcs.templates.current_id(
+            args['host'],
+            args['user'],
+            args['pswd'],
+            cert=args['cert'],
+            filename=args['name'],
+            title=args['name'])
+        print "I found",template_id
+    
+    elif args['templates_delete']:
+        response = mdcs.templates.delete(
+            args['id'],
+            args['host'],
+            args['user'],
+            args['pswd'],
+            cert=args['cert'],
+            next=args['next'])
+        print response
+    
+    elif args['templates_restore']:
+        response = mdcs.templates.restore(
+            args['id'],
+            args['host'],
+            args['user'],
+            args['pswd'],
+            cert=args['cert'])
+        print response
+
+# types rest actions
+def types(args):
+    if args['types_add']:
+        response = mdcs.types.add(
+            args['xsd_file_name'],
+            args['type_name'],
+            args['host'],
+            args['user'],
+            args['pswd'],
+            cert=args['cert'],
+            version=args['version'],
+            dependencies=args['dependencies'])
+        if response==201:
+            print "Successful upload of:",args['xsd_file_name']
+        else:
+            print "An error has occured:",response
+    
+    elif args['types_all']:
+        types = mdcs.types.select_all(
+            args['host'],
+            args['user'],
+            args['pswd'],
+            cert=args['cert'])
+        print "There are",len(types)," total types in the repository."
+        delim = ":"
+        print "Title",delim,"filename",delim,"Template ID"
+        for t in types:
+            print t['title'],delim,t['filename'],delim,t['id']
+    
+    elif args['types_current']:
+        types = mdcs.types.select_current(
+            args['host'],
+            args['user'],
+            args['pswd'],
+            cert=args['cert'])
+        print "There are",len(types)," current types in the repository."
+        delim = ":"
+        print "Title",delim,"filename",delim,"Template ID"
+        for t in types:
+            print t['title'],delim,t['filename'],delim,t['id']
+    
+    elif args['types_find']:
+        type_id = mdcs.types.current_id(
+            args['host'],
+            args['user'],
+            args['pswd'],
+            cert=args['cert'],
+            filename=args['name'],
+            title=args['name'])
+        print "I found",type_id
+    
+    elif args['types_delete']:
+        response = mdcs.types.delete(
+            args['id'],
+            args['host'],
+            args['user'],
+            args['pswd'],
+            cert=args['cert'],
+            next=args['next'])
+        print response
+    
+    elif args['types_restore']:
+        response = mdcs.types.restore(
+            args['id'],
+            args['host'],
+            args['user'],
+            args['pswd'],
+            cert=args['cert'])
+        print response
+
+
+
+#-------------------------------------------------------------------------------
+# executable code
+#-------------------------------------------------------------------------------
+args = get_function_args()
+n = sum([
+    args['curate'],
+    args['blob'],
+    args['explore'],
+    args['templates'],
+    args['types']])
+if n!=1: sys.exit("Error: unknown operation type.")
+if args['curate']:    curate(args)
+if args['blob']:      blob(args)
+if args['explore']:   explore(args)
+if args['templates']: templates(args)
+if args['types']:     types(args)
