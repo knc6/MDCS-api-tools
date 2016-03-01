@@ -61,6 +61,7 @@ def get_function_args():
 -tn <template name> [optional]
 -n <XML record name> [optional]
 -id <record id> [optional]
+-delete [optional] This will delete the XML document.
 -j [optional] Download record as JSON
 -x [optional] Download record as XML
 
@@ -147,12 +148,11 @@ def get_function_args():
             default=None)
         parser.add_argument(
             "-n" ,
-            "--record-name",
             dest='record_name',
             type=str,
             default=None)
         parser.add_argument(
-            "--id",
+            "-id",
             dest='record_id',
             type=str,
             default=None)
@@ -164,6 +164,10 @@ def get_function_args():
             '-x', 
             action='store_true',
             dest='download_xml')
+        parser.add_argument(
+            '-delete', 
+            action='store_true',
+            dest='delete_record')
     
     # templates command line input
     if args['templates']:
@@ -379,7 +383,21 @@ def blob(args):
 
 # explore rest actions
 def explore(args):
-    if any([args['template_name'],args['record_name'],args['record_id']]):
+    if args['delete_record']:
+        if any([args['template_name'],args['record_name'],args['download_json'],args['download_xml']]):
+            print "Option -explore -delete can only be used with -id"
+        elif not args['record_id']:
+            print "You must specifyt an id with -id"
+        else:
+            response = mdcs.explore.delete(
+                args['record_id'],
+                args['host'],
+                args['user'],
+                args['pswd'],
+                cert=args['cert'])
+            print response
+    
+    elif any([args['template_name'],args['record_name'],args['record_id']]):
         if not any([args['download_json'],args['download_xml']]):
             records = mdcs.explore.select(
                 args['host'],
