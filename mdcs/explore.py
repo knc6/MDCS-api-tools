@@ -29,6 +29,11 @@ def delete(ID,host,user,pswd,cert=None):
     else:
         return r.json()
     
-def query():
-    return None
-    print "This feature has not been added"
+def query(host,user,pswd,cert=None,format=None,query=None,repositories=None):
+    url = host + "/rest/explore/query-by-example"
+    data = dict()
+    if format: data['dataformat'] = format
+    if query: data['query'] = query
+    if repositories: data['repositories'] = repositories
+    r = requests.post(url, data=data, auth=(user, pswd), verify=cert)
+    return r.json()
