@@ -63,10 +63,6 @@ def versions_select_all(host,user,pswd,cert=None):
     r = requests.get(url, auth=(user, pswd), verify=cert)
     return r.json()
 
-def versions_all():
-    print "This feature has not been added"
-    return None
-
 def current_id(host,user,pswd,cert=None,filename=None,title=None):
     templates = select_all(host,user,pswd,cert)
     versions = versions_select_all(host,user,pswd,cert)
