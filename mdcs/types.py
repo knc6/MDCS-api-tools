@@ -1,6 +1,5 @@
 #! /usr/bin/env python
 import requests
-import json
 
 def add(filename,title,host,user,pswd,cert=None,version=None,dependencies=None):
     url = host + "/rest/types/add"

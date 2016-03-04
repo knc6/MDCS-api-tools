@@ -1,6 +1,5 @@
 #! /usr/bin/env python
 import requests
-import json
 
 def select_all(host,user,pswd,cert=None,format=None):
     url = host + "/rest/explore/select/all"
