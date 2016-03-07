@@ -1,6 +1,5 @@
 #! /usr/bin/env python
 import requests
-import json
 
 def upload(name,host,user,pswd,cert=None):
     url = host + "/rest/blob"

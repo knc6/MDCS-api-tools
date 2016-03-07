@@ -1,6 +1,5 @@
 #! /usr/bin/env python
 import requests
-import json
 from templates import current_id
 
 def curate(file_name,file_title,template_id,host,user,pswd,cert=None,content=None):
