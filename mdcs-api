@@ -5,6 +5,11 @@ import mdcs
 import json
 import sys
 
+import lxml.etree as etree
+import hashlib
+import xmltodict
+from io import BytesIO
+
 #-------------------------------------------------------------------------------
 # functions
 #-------------------------------------------------------------------------------
@@ -109,6 +114,14 @@ def get_function_args():
 -restore   Restore a deleted Type:
            -id <ID of type to restore>
            
+''')
+    parser.add_argument(
+        '-smart-xsd', 
+        action='store_true',
+        dest='smart_xsd',
+        help=
+'''Attempt to automatically upload XSD with local dependencies
+-tn <template name>
 ''')
     known_args, unknown_args = parser.parse_known_args()
     args = vars(known_args)
@@ -323,6 +336,13 @@ def get_function_args():
                 type=str,
                 required=True)
     
+    # smart-xsd command line input
+    if args['smart_xsd']:
+        parser.add_argument(
+            "-tn",
+            dest='template_name',
+            type=str,
+            default=None)
     
     known_args, unknown_args = parser.parse_known_args()
     args = vars(known_args)
@@ -472,7 +492,7 @@ def explore(args):
 # templates rest actions
 def templates(args):
     if args['templates_add']:
-        response = mdcs.templates.add(
+        response,r_data = mdcs.templates.add(
             args['xsd_file_name'],
             args['template_name'],
             args['host'],
@@ -542,7 +562,7 @@ def templates(args):
 # types rest actions
 def types(args):
     if args['types_add']:
-        response = mdcs.types.add(
+        response,r_data = mdcs.types.add(
             args['xsd_file_name'],
             args['type_name'],
             args['host'],
@@ -609,6 +629,110 @@ def types(args):
             cert=args['cert'])
         print response
 
+# xsd smart uploader functions
+def xsd_type_dependencies(xsd_name):
+    xsd_type=None
+    xsd_dependencies=list()
+    
+    with open(xsd_name, mode='r') as f:
+        xsd_data = f.read()
+    
+    hash_parser = etree.XMLParser(remove_blank_text=True,remove_comments=True,remove_pis=True)
+    etree.set_default_parser(parser=hash_parser)
+    xmlTree = etree.parse(BytesIO(xsd_data.encode('utf-8')))
+    cleanXmlString = etree.tostring(xmlTree)
+    xmlDict = xmltodict.parse(cleanXmlString, dict_constructor=dict)
+	
+    root_content = xmlDict['xsd:schema'].keys()
+    
+    if "xsd:element" in root_content or "xs:element" in root_content:
+        xsd_type = "template"
+    else:
+        xsd_type = "type"
+    
+    root = xmlTree.getroot()
+    
+    for child in root:
+        if "include" in child.tag or "import" in child.tag:
+            child_xsd = child.attrib['schemaLocation']
+            xsd_dependencies.append(child_xsd)
+    
+    return xsd_type,xsd_dependencies
+
+def recursive_upload_xsd(xsd_name):
+    name = xsd_name.replace('.xsd','')
+    xsd_id=None
+    xsd_id_list=list()
+    xsd_type,xsd_dependencies = xsd_type_dependencies(xsd_name)
+    
+    for xsd in xsd_dependencies:
+        ref_xsd_id = recursive_upload_xsd(xsd)
+        
+        xsd_id_list.append(str(ref_xsd_id))
+    
+    dependencies = str(xsd_id_list)
+    dependencies = dependencies.replace(" ","")
+    dependencies = dependencies.replace("'","")
+    dependencies = dependencies.replace("[","")
+    dependencies = dependencies.replace("]","")
+    
+    if xsd_type is 'type':
+        xsd_id = mdcs.types.current_id(
+            args['host'],
+            args['user'],
+            args['pswd'],
+            cert=args['cert'],
+            title=name)
+        if xsd_id is None:
+            print "uploading",name,"as",xsd_type
+            response,r_data = mdcs.types.add(
+                xsd_name,
+                name,
+                args['host'],
+                args['user'],
+                args['pswd'],
+                cert=args['cert'],
+                dependencies=dependencies)
+            xsd_id = mdcs.types.current_id(
+                args['host'],
+                args['user'],
+                args['pswd'],
+                cert=args['cert'],
+                title=name)
+        else:
+            print "found dependency",name,"as",xsd_id
+            
+    else:
+        xsd_id = mdcs.templates.current_id(
+            args['host'],
+            args['user'],
+            args['pswd'],
+            cert=args['cert'],
+            title=name)
+        if xsd_id is None:
+            print "uploading",name,"as",xsd_type
+            response,r_data = mdcs.templates.add(
+                xsd_name,
+                name,
+                args['host'],
+                args['user'],
+                args['pswd'],
+                cert=args['cert'],
+                dependencies=dependencies)
+            xsd_id = mdcs.templates.current_id(
+                args['host'],
+                args['user'],
+                args['pswd'],
+                cert=args['cert'],
+                title=name)
+        else:
+            print "found Template",name,"as",xsd_id
+    
+    return xsd_id
+
+# xsd smart uploader actions
+def xsd_smart_upload(args):
+    recursive_upload_xsd(args['template_name'])
 
 
 #-------------------------------------------------------------------------------
@@ -620,10 +744,12 @@ n = sum([
     args['blob'],
     args['explore'],
     args['templates'],
-    args['types']])
+    args['types'],
+    args['smart_xsd']])
 if n!=1: sys.exit("Error: unknown operation type.")
 if args['curate']:    curate(args)
 if args['blob']:      blob(args)
 if args['explore']:   explore(args)
 if args['templates']: templates(args)
 if args['types']:     types(args)
+if args['smart_xsd']:  xsd_smart_upload(args)
