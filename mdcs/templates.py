@@ -17,9 +17,9 @@ def add(filename,title,host,user,pswd,cert=None,version=None,dependencies=None):
     r = requests.post(url, data=data, auth=(user, pswd), verify=cert)
     
     if int(r.status_code)==201:
-        return int(r.status_code)
+        return int(r.status_code),r.json()
     else:
-        return r.json()
+        return int(r.status_code)
 
 # API method appears to be broken
 def select(host,user,pswd,cert=None,ID=None,filename=None,title=None,version=None,templateVersion=None,Hash=None):
@@ -79,7 +79,7 @@ def current_id(host,user,pswd,cert=None,filename=None,title=None):
     if len(current_list) == 1:
         return current_list[0]
     else:
-        print "Error: Multiple current templates found by that name!"
+        return None
 
 def select_current(host,user,pswd,cert=None):
     templates = select_all(host,user,pswd,cert)
