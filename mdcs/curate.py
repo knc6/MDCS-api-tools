@@ -11,7 +11,7 @@ def curate(file_name,file_title,template_id,host,user,pswd,cert=None,content=Non
     data['schema']=[template_id]
     data['title']=[file_title]
     
-    url = host +  "/rest/curate"
+    url = host.strip("/") +  "/rest/curate"
     r = requests.post(url, data=data, auth=(user, pswd), verify=cert)
     if int(r.status_code)==201:
         return int(r.status_code)

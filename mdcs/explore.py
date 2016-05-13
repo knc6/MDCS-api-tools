@@ -3,14 +3,14 @@ import requests
 from collections import OrderedDict
 
 def select_all(host,user,pswd,cert=None,format=None):
-    url = host + "/rest/explore/select/all"
+    url = host.strip("/") + "/rest/explore/select/all"
     params = dict()
     if format: params['dataformat'] = format
     r = requests.get(url, params=params, auth=(user, pswd), verify=cert)
     return r.json(object_pairs_hook=OrderedDict)
 
 def select(host,user,pswd,cert=None,format=None,ID=None,template=None,title=None):
-    url = host + "/rest/explore/select"
+    url = host.strip("/") + "/rest/explore/select"
     params = dict()
     if format:   params['dataformat'] = format
     if ID:       params['id']         = ID
@@ -20,7 +20,7 @@ def select(host,user,pswd,cert=None,format=None,ID=None,template=None,title=None
     return r.json(object_pairs_hook=OrderedDict)
     
 def delete(ID,host,user,pswd,cert=None):
-    url = host + "/rest/explore/delete"
+    url = host.strip("/") + "/rest/explore/delete"
     params = dict()
     params['id']=ID
     r = requests.delete(url, params=params, auth=(user, pswd), verify=cert)
@@ -30,7 +30,7 @@ def delete(ID,host,user,pswd,cert=None):
         return r.json()
     
 def query(host,user,pswd,cert=None,format=None,query=None,repositories=None):
-    url = host + "/rest/explore/query-by-example"
+    url = host.strip("/") + "/rest/explore/query-by-example"
     data = dict()
     if format: data['dataformat'] = format
     if query: data['query'] = query
