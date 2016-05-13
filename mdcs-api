@@ -194,6 +194,10 @@ def get_function_args():
             action='store_true',
             dest='templates_all')
         parser.add_argument(
+            '-x', 
+            action='store_true',
+            dest='download_xsd')
+        parser.add_argument(
             '-current', 
             action='store_true',
             dest='templates_current')
@@ -270,6 +274,10 @@ def get_function_args():
             '-all', 
             action='store_true',
             dest='types_all')
+        parser.add_argument(
+            '-x', 
+            action='store_true',
+            dest='download_xsd')
         parser.add_argument(
             '-current', 
             action='store_true',
@@ -374,6 +382,15 @@ def write_xml_records(records):
         content=item['content']
         content_root = content.split('\n')[1].split('>')[0].replace('<','')
         fname=content_title+"."+content_root+"."+content_id+".xml"
+        print "Saving file:",fname
+        with open(fname, "w") as f:
+            f.write("%s" % content)
+
+# write list of xsd results to disk
+def write_xsd_records(records):
+    for item in records:
+        fname=item['filename']
+        content=item['content']
         print "Saving file:",fname
         with open(fname, "w") as f:
             f.write("%s" % content)
@@ -532,11 +549,14 @@ def templates(args):
             args['user'],
             args['pswd'],
             cert=args['cert'])
-        print "There are",len(templates)," total templates in the repository."
-        delim = ":"
-        print "Title",delim,"filename",delim,"Template ID"
-        for t in templates:
-            print t['title'],delim,t['filename'],delim,t['id']
+        if args['download_xsd']:
+            write_xsd_records(templates)
+        else:
+            print "There are",len(templates)," total templates in the repository."
+            delim = ":"
+            print "Title",delim,"filename",delim,"Template ID"
+            for t in templates:
+                print t['title'],delim,t['filename'],delim,t['id']
     
     elif args['templates_current']:
         templates = mdcs.templates.select_current(
@@ -544,11 +564,14 @@ def templates(args):
             args['user'],
             args['pswd'],
             cert=args['cert'])
-        print "There are",len(templates)," current templates in the repository."
-        delim = ":"
-        print "Title",delim,"filename",delim,"Template ID"
-        for t in templates:
-            print t['title'],delim,t['filename'],delim,t['id']
+        if args['download_xsd']:
+            write_xsd_records(templates)
+        else:
+            print "There are",len(templates)," current templates in the repository."
+            delim = ":"
+            print "Title",delim,"filename",delim,"Template ID"
+            for t in templates:
+                print t['title'],delim,t['filename'],delim,t['id']
     
     elif args['templates_find']:
         template_id = mdcs.templates.current_id(
@@ -602,11 +625,14 @@ def types(args):
             args['user'],
             args['pswd'],
             cert=args['cert'])
-        print "There are",len(types)," total types in the repository."
-        delim = ":"
-        print "Title",delim,"filename",delim,"Template ID"
-        for t in types:
-            print t['title'],delim,t['filename'],delim,t['id']
+        if args['download_xsd']:
+            write_xsd_records(types)
+        else:
+            print "There are",len(types)," total types in the repository."
+            delim = ":"
+            print "Title",delim,"filename",delim,"Template ID"
+            for t in types:
+                print t['title'],delim,t['filename'],delim,t['id']
     
     elif args['types_current']:
         types = mdcs.types.select_current(
@@ -614,11 +640,14 @@ def types(args):
             args['user'],
             args['pswd'],
             cert=args['cert'])
-        print "There are",len(types)," current types in the repository."
-        delim = ":"
-        print "Title",delim,"filename",delim,"Template ID"
-        for t in types:
-            print t['title'],delim,t['filename'],delim,t['id']
+        if args['download_xsd']:
+            write_xsd_records(types)
+        else:
+            print "There are",len(types)," current types in the repository."
+            delim = ":"
+            print "Title",delim,"filename",delim,"Template ID"
+            for t in types:
+                print t['title'],delim,t['filename'],delim,t['id']
     
     elif args['types_find']:
         type_id = mdcs.types.current_id(
