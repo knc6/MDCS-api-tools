@@ -398,10 +398,11 @@ def write_xsd_records(records):
 # curate rest actions
 def curate(args):
     if len(args['xml_file'])==1:
+        xml ,= args['xml_file']
         if args['record_name'] is None:
-            args['record_name'] = args['xml_file'].replace('.xml','')
+            args['record_name'] = xml.replace('.xml','')
         response = mdcs.curate_as(
-            args['xml_file'],
+            xml,
             args['record_name'],
             args['host'],
             args['user'],
@@ -409,7 +410,7 @@ def curate(args):
             cert=args['cert'],
             template_title=args['template_name'])
         if response==201:
-            print "Successful upload of:",args['xml_file']
+            print "Successful upload of:",xml
         else:
             print "An error has occured:",response
     else:
