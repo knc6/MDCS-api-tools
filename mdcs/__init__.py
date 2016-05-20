@@ -8,3 +8,5 @@ import saved_queries
 import templates
 import types
 import users
+import requests
+requests.packages.urllib3.disable_warnings()

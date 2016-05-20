@@ -137,12 +137,13 @@ def get_function_args():
             "-x",
             dest='xml_file',
             type=str,
-            required=True)
+            required=True,
+            nargs='+')
         parser.add_argument(
             "-n",
             dest='record_name',
-            type=str,
-            required=True)
+            default=None,
+            type=str)
     
     # blob command line input
     if args['blob']:
@@ -192,6 +193,10 @@ def get_function_args():
             '-all', 
             action='store_true',
             dest='templates_all')
+        parser.add_argument(
+            '-x', 
+            action='store_true',
+            dest='download_xsd')
         parser.add_argument(
             '-current', 
             action='store_true',
@@ -269,6 +274,10 @@ def get_function_args():
             '-all', 
             action='store_true',
             dest='types_all')
+        parser.add_argument(
+            '-x', 
+            action='store_true',
+            dest='download_xsd')
         parser.add_argument(
             '-current', 
             action='store_true',
@@ -377,20 +386,49 @@ def write_xml_records(records):
         with open(fname, "w") as f:
             f.write("%s" % content)
 
+# write list of xsd results to disk
+def write_xsd_records(records):
+    for item in records:
+        fname=item['filename']
+        content=item['content']
+        print "Saving file:",fname
+        with open(fname, "w") as f:
+            f.write("%s" % content)
+
 # curate rest actions
 def curate(args):
-    response = mdcs.curate_as(
-        args['xml_file'],
-        args['record_name'],
-        args['host'],
-        args['user'],
-        args['pswd'],
-        cert=args['cert'],
-        template_title=args['template_name'])
-    if response==201:
-        print "Successful upload of:",args['xml_file']
+    if len(args['xml_file'])==1:
+        xml ,= args['xml_file']
+        if args['record_name'] is None:
+            args['record_name'] = xml.replace('.xml','')
+        response = mdcs.curate_as(
+            xml,
+            args['record_name'],
+            args['host'],
+            args['user'],
+            args['pswd'],
+            cert=args['cert'],
+            template_title=args['template_name'])
+        if response==201:
+            print "Successful upload of:",xml
+        else:
+            print "An error has occured:",response
     else:
-        print "An error has occured:",response
+        print "Performing automatic upload of multiple XML records"
+        for xml in args['xml_file']:
+            record_name = xml.replace('.xml','')
+            response = mdcs.curate_as(
+                xml,
+                record_name,
+                args['host'],
+                args['user'],
+                args['pswd'],
+                cert=args['cert'],
+                template_title=args['template_name'])
+            if response==201:
+                print "Successful upload of:",xml,"as",record_name
+            else:
+                print "An error has occured:",response
 
 # blob rest actions
 def blob(args):
@@ -512,11 +550,14 @@ def templates(args):
             args['user'],
             args['pswd'],
             cert=args['cert'])
-        print "There are",len(templates)," total templates in the repository."
-        delim = ":"
-        print "Title",delim,"filename",delim,"Template ID"
-        for t in templates:
-            print t['title'],delim,t['filename'],delim,t['id']
+        if args['download_xsd']:
+            write_xsd_records(templates)
+        else:
+            print "There are",len(templates)," total templates in the repository."
+            delim = ":"
+            print "Title",delim,"filename",delim,"Template ID"
+            for t in templates:
+                print t['title'],delim,t['filename'],delim,t['id']
     
     elif args['templates_current']:
         templates = mdcs.templates.select_current(
@@ -524,11 +565,14 @@ def templates(args):
             args['user'],
             args['pswd'],
             cert=args['cert'])
-        print "There are",len(templates)," current templates in the repository."
-        delim = ":"
-        print "Title",delim,"filename",delim,"Template ID"
-        for t in templates:
-            print t['title'],delim,t['filename'],delim,t['id']
+        if args['download_xsd']:
+            write_xsd_records(templates)
+        else:
+            print "There are",len(templates)," current templates in the repository."
+            delim = ":"
+            print "Title",delim,"filename",delim,"Template ID"
+            for t in templates:
+                print t['title'],delim,t['filename'],delim,t['id']
     
     elif args['templates_find']:
         template_id = mdcs.templates.current_id(
@@ -582,11 +626,14 @@ def types(args):
             args['user'],
             args['pswd'],
             cert=args['cert'])
-        print "There are",len(types)," total types in the repository."
-        delim = ":"
-        print "Title",delim,"filename",delim,"Template ID"
-        for t in types:
-            print t['title'],delim,t['filename'],delim,t['id']
+        if args['download_xsd']:
+            write_xsd_records(types)
+        else:
+            print "There are",len(types)," total types in the repository."
+            delim = ":"
+            print "Title",delim,"filename",delim,"Template ID"
+            for t in types:
+                print t['title'],delim,t['filename'],delim,t['id']
     
     elif args['types_current']:
         types = mdcs.types.select_current(
@@ -594,11 +641,14 @@ def types(args):
             args['user'],
             args['pswd'],
             cert=args['cert'])
-        print "There are",len(types)," current types in the repository."
-        delim = ":"
-        print "Title",delim,"filename",delim,"Template ID"
-        for t in types:
-            print t['title'],delim,t['filename'],delim,t['id']
+        if args['download_xsd']:
+            write_xsd_records(types)
+        else:
+            print "There are",len(types)," current types in the repository."
+            delim = ":"
+            print "Title",delim,"filename",delim,"Template ID"
+            for t in types:
+                print t['title'],delim,t['filename'],delim,t['id']
     
     elif args['types_find']:
         type_id = mdcs.types.current_id(

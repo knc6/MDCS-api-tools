@@ -2,7 +2,7 @@
 import requests
 
 def add(filename,title,host,user,pswd,cert=None,version=None,dependencies=None):
-    url = host + "/rest/types/add"
+    url = host.strip("/") + "/rest/types/add"
     
     with open(filename, 'r') as f: 
         xsd_data = f.read()
@@ -23,7 +23,7 @@ def add(filename,title,host,user,pswd,cert=None,version=None,dependencies=None):
 
 # API method appears to be broken
 def select(host,user,pswd,cert=None,ID=None,filename=None,title=None,version=None,typeVersion=None,Hash=None):
-    url = host + "/rest/types/select"
+    url = host.strip("/") + "/rest/types/select"
     params = dict()
     if ID: params['id']=ID
     if filename: params['filename']=filename
@@ -35,7 +35,7 @@ def select(host,user,pswd,cert=None,ID=None,filename=None,title=None,version=Non
     return r.json()
 
 def delete(ID,host,user,pswd,cert=None,next=None):
-    url = host + "/rest/types/delete"
+    url = host.strip("/") + "/rest/types/delete"
     params = dict()
     params['id']=ID
     if next: params['next']=next
@@ -46,19 +46,19 @@ def delete(ID,host,user,pswd,cert=None,next=None):
         return r.json()
 
 def restore(ID,host,user,pswd,cert=None):
-    url = host + "/rest/types/restore"
+    url = host.strip("/") + "/rest/types/restore"
     params = dict()
     params['id']=ID
     r = requests.get(url, params=params, auth=(user, pswd), verify=cert)
     return r.json()
 
 def select_all(host,user,pswd,cert=None):
-    url = host + "/rest/types/select/all"
+    url = host.strip("/") + "/rest/types/select/all"
     r = requests.get(url, auth=(user, pswd), verify=cert)
     return r.json()
 
 def versions_select_all(host,user,pswd,cert=None):
-    url = host + "/rest/types/versions/select/all"
+    url = host.strip("/") + "/rest/types/versions/select/all"
     r = requests.get(url, auth=(user, pswd), verify=cert)
     return r.json()
 
