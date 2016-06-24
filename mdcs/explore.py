@@ -20,6 +20,18 @@ def select(host,user,pswd,cert=None,format=None,ID=None,template=None,title=None
     return r.json(object_pairs_hook=OrderedDict)
     
 def delete(ID,host,user,pswd,cert=None):
+    """Delete an entry
+    
+    Input:
+        ID - string, ID of object to be deleted
+        host - string, URL of MDCS instance
+        user - string, username of desired account on MDCS server
+        pswd - string, password of desired account on MDCS server
+        cert - string, path to authentication certificate
+    Output:
+        response from MDCS
+    """
+    
     url = host.strip("/") + "/rest/explore/delete"
     params = dict()
     params['id']=ID
