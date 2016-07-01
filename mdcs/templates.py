@@ -63,6 +63,20 @@ def versions_select_all(host,user,pswd,cert=None):
     return r.json()
 
 def current_id(host,user,pswd,cert=None,filename=None,title=None):
+    """
+    Get the ID number of the current version of a certain template
+    
+    Input:
+        host - string, URL of the mdcs host
+        user - string, username (must have admin privilages?)
+        pswd - string, password
+        cert - string, path to authentication certificate 
+        filename - string, filename of desired template
+        title - string, title of desired template
+    Output:
+        string - ID of desired template, if there was exactly one match. 
+            Otherwise, `None`
+    """
     templates = select_all(host,user,pswd,cert)
     versions = versions_select_all(host,user,pswd,cert)
     
@@ -82,6 +96,17 @@ def current_id(host,user,pswd,cert=None,filename=None,title=None):
         return None
 
 def select_current(host,user,pswd,cert=None):
+    """
+    Get list of current versions of all templates in the database
+    
+    Input:
+        host - string, URL of the mdcs host
+        user - string, username (must have admin privilages?)
+        pswd - string, password
+        cert - string, path to authentication certificate 
+    Output:
+        list of dictionaries describing each of the active templates
+    """
     templates = select_all(host,user,pswd,cert)
     versions = versions_select_all(host,user,pswd,cert)
     
