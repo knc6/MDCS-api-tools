@@ -23,7 +23,7 @@ def select_all(host,user,pswd,cert=None,format=None):
     params = dict()
     if format: params['dataformat'] = format
     r = requests.get(url, params=params, auth=(user, pswd), verify=cert)
-    return r.json(object_pairs_hook=OrderedDict)
+    return check_response(r)
 
 def select(host,user,pswd,cert=None,format=None,ID=None,template=None,title=None):
     """Get all data that fits a certain simple query
@@ -52,7 +52,7 @@ def select(host,user,pswd,cert=None,format=None,ID=None,template=None,title=None
     if template: params['schema']     = template
     if title:    params['title']      = title
     r = requests.get(url, params=params, auth=(user, pswd), verify=cert)
-    return r.json(object_pairs_hook=OrderedDict)
+    return check_response(r)
     
 def delete(ID,host,user,pswd,cert=None):
     """Delete an entry
@@ -71,10 +71,7 @@ def delete(ID,host,user,pswd,cert=None):
     params = dict()
     params['id']=ID
     r = requests.delete(url, params=params, auth=(user, pswd), verify=cert)
-    if int(r.status_code)==204:
-        return "Successful deletion of: "+ID
-    else:
-        return r.json()
+    return check_response(r)
     
 def query(host,user,pswd,cert=None,format=None,query=None,repositories=None):
     """Query by example.
@@ -100,4 +97,4 @@ def query(host,user,pswd,cert=None,format=None,query=None,repositories=None):
     if query: data['query'] = query
     if repositories: data['repositories'] = repositories
     r = requests.post(url, data=data, auth=(user, pswd), verify=cert)
-    return r.json(object_pairs_hook=OrderedDict)
+    return check_response(r)
