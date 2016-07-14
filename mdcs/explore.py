@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 import requests
 from collections import OrderedDict
+from utils import check_response
 
 def select_all(host,user,pswd,cert=None,format=None):
     """Get all data from the MDCS server
