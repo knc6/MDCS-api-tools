@@ -9,6 +9,7 @@ import lxml.etree as etree
 import hashlib
 import xmltodict
 from io import BytesIO
+import codecs
 
 #-------------------------------------------------------------------------------
 # functions
@@ -371,7 +372,7 @@ def write_json_records(records):
         content_root ,= content.keys()
         fname=content_title+"."+content_root+"."+content_id+".json"
         print "Saving file:",fname
-        with open(fname, "w") as f:
+        with codecs.open(fname, encoding='utf-8', mode='w+') as f:
             f.write("%s" % json.dumps(content,indent=4,separators=(',', ': ')))
 
 # write list of xml results to disk
@@ -383,8 +384,8 @@ def write_xml_records(records):
         content_root = content.split('\n')[1].split('>')[0].replace('<','')
         fname=content_title+"."+content_root+"."+content_id+".xml"
         print "Saving file:",fname
-        with open(fname, "w") as f:
-            f.write("%s" % content)
+        with codecs.open(fname, encoding='utf-8', mode='w+') as f:
+            f.write(u'%s' % content)
 
 # write list of xsd results to disk
 def write_xsd_records(records):
@@ -392,8 +393,8 @@ def write_xsd_records(records):
         fname=item['filename']
         content=item['content']
         print "Saving file:",fname
-        with open(fname, "w") as f:
-            f.write("%s" % content)
+        with codecs.open(fname, encoding='utf-8', mode='w+') as f:
+            f.write(u'%s' % content)
 
 # curate rest actions
 def curate(args):
