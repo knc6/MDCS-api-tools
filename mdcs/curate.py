@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 import requests
 from templates import current_id
+from utils import check_response
 
 def curate(file_name,file_title,template_id,host,user,pswd,cert=None,content=None):
     if content is None:
@@ -13,10 +14,7 @@ def curate(file_name,file_title,template_id,host,user,pswd,cert=None,content=Non
     
     url = host.strip("/") +  "/rest/curate"
     r = requests.post(url, data=data, auth=(user, pswd), verify=cert)
-    if int(r.status_code)==201:
-        return int(r.status_code)
-    else:
-        return r.json()
+    return check_response(r)
 
 def curate_as(file_name,file_title,host,user,pswd,cert=None,filename=None,template_title=None,content=None):
     template_id = current_id(host,user,pswd,cert=cert,filename=filename,title=template_title)
