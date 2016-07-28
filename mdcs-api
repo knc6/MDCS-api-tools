@@ -194,7 +194,7 @@ def get_function_args():
             action='store_true',
             dest='templates_all')
         parser.add_argument(
-            '-x', 
+            '-download', 
             action='store_true',
             dest='download_xsd')
         parser.add_argument(
@@ -275,7 +275,7 @@ def get_function_args():
             action='store_true',
             dest='types_all')
         parser.add_argument(
-            '-x', 
+            '-download', 
             action='store_true',
             dest='download_xsd')
         parser.add_argument(
@@ -386,6 +386,19 @@ def write_xml_records(records):
         with open(fname, "w") as f:
             f.write("%s" % content)
 
+# write list of xml results to disk
+def print_xml_records(records):
+    print len(records)," records were found in the repository."
+    width = 25
+    
+    column = "{0:"+str(width)+"}|{1:"+str(width)+"}|{2:25}|{3:25}"
+    print column.format("Title","Root Element","Record ID","Template ID")
+    for r in records:
+        title = r['title']
+        if len(title) > width:
+            title = title[0:(width-3)]+"..."
+        print column.format(title,r['content'].keys()[0],r['_id'],r['schema'])
+
 # write list of xsd results to disk
 def write_xsd_records(records):
     for item in records:
@@ -394,6 +407,22 @@ def write_xsd_records(records):
         print "Saving file:",fname
         with open(fname, "w") as f:
             f.write("%s" % content)
+
+# print list of xsd results to screen
+def print_xsd_records(records):
+    print len(records)," schemas were found in the repository."
+    width = 55
+    
+    column = "{0:"+str(width)+"}|{1:"+str(width)+"}|{2:25}"
+    print column.format("Title","Filename","Template ID")
+    for r in records:
+        title = r['title']
+        if len(title) > width:
+            title = title[0:(width-3)]+"..."
+        filename = r['filename']
+        if len(filename) > width:
+            filename = filename[0:(width-3)]+"..."
+        print column.format(title,filename,r['id'])
 
 # curate rest actions
 def curate(args):
@@ -409,10 +438,8 @@ def curate(args):
             args['pswd'],
             cert=args['cert'],
             template_title=args['template_name'])
-        if response==201:
-            print "Successful upload of:",xml
-        else:
-            print "An error has occured:",response
+        print "Successful upload of:",xml
+        
     else:
         print "Performing automatic upload of multiple XML records"
         for xml in args['xml_file']:
@@ -425,10 +452,8 @@ def curate(args):
                 args['pswd'],
                 cert=args['cert'],
                 template_title=args['template_name'])
-            if response==201:
-                print "Successful upload of:",xml,"as",record_name
-            else:
-                print "An error has occured:",response
+            
+            print "Successful upload of:",xml,"as",record_name
 
 # blob rest actions
 def blob(args):
@@ -453,7 +478,7 @@ def explore(args):
                 args['user'],
                 args['pswd'],
                 cert=args['cert'])
-            print response
+            print "Successful deletion of:", args['record_id']
     
     elif any([args['template_name'],args['record_name'],args['record_id']]):
         if not any([args['download_json'],args['download_xml']]):
@@ -466,11 +491,7 @@ def explore(args):
                 ID=args['record_id'],
                 template=args['template_name'],
                 title=args['record_name'])
-            print "There are",len(records),"records in the repository."
-            delim = ":"
-            print "Title",delim,"root",delim,"record ID",delim,"template ID"
-            for item in records:
-                print item['title'],delim,item['content'].keys()[0],delim,item['_id'],delim,item['schema']
+            print_xml_records(records)
         
         if args['download_json']:
             records = mdcs.explore.select(
@@ -503,11 +524,7 @@ def explore(args):
                 args['pswd'],
                 cert=args['cert'],
                 format='json')
-            print "There are",len(records),"records in the repository."
-            delim = ":"
-            print "Title",delim,"root",delim,"record ID",delim,"template ID"
-            for item in records:
-                print item['title'],delim,item['content'].keys()[0],delim,item['_id'],delim,item['schema']
+            print_xml_records(records)
         
         if args['download_json']:
             records = mdcs.explore.select_all(
@@ -530,7 +547,7 @@ def explore(args):
 # templates rest actions
 def templates(args):
     if args['templates_add']:
-        response,r_data = mdcs.templates.add(
+        response = mdcs.templates.add(
             args['xsd_file_name'],
             args['template_name'],
             args['host'],
@@ -539,10 +556,9 @@ def templates(args):
             cert=args['cert'],
             version=args['version'],
             dependencies=args['dependencies'])
-        if response==201:
-            print "Successful upload of:",args['xsd_file_name']
-        else:
-            print "An error has occured:",response
+        print "Success:"
+        print "title:",response['title']
+        print "filename:",response['filename']
     
     elif args['templates_all']:
         templates = mdcs.templates.select_all(
@@ -553,11 +569,7 @@ def templates(args):
         if args['download_xsd']:
             write_xsd_records(templates)
         else:
-            print "There are",len(templates)," total templates in the repository."
-            delim = ":"
-            print "Title",delim,"filename",delim,"Template ID"
-            for t in templates:
-                print t['title'],delim,t['filename'],delim,t['id']
+            print_xsd_records(templates)
     
     elif args['templates_current']:
         templates = mdcs.templates.select_current(
@@ -568,11 +580,7 @@ def templates(args):
         if args['download_xsd']:
             write_xsd_records(templates)
         else:
-            print "There are",len(templates)," current templates in the repository."
-            delim = ":"
-            print "Title",delim,"filename",delim,"Template ID"
-            for t in templates:
-                print t['title'],delim,t['filename'],delim,t['id']
+            print_xsd_records(templates)
     
     elif args['templates_find']:
         template_id = mdcs.templates.current_id(
@@ -606,7 +614,7 @@ def templates(args):
 # types rest actions
 def types(args):
     if args['types_add']:
-        response,r_data = mdcs.types.add(
+        response = mdcs.types.add(
             args['xsd_file_name'],
             args['type_name'],
             args['host'],
@@ -615,10 +623,9 @@ def types(args):
             cert=args['cert'],
             version=args['version'],
             dependencies=args['dependencies'])
-        if response==201:
-            print "Successful upload of:",args['xsd_file_name']
-        else:
-            print "An error has occured:",response
+        print "Success:"
+        print "title:",response['title']
+        print "filename:",response['filename']
     
     elif args['types_all']:
         types = mdcs.types.select_all(
@@ -629,11 +636,7 @@ def types(args):
         if args['download_xsd']:
             write_xsd_records(types)
         else:
-            print "There are",len(types)," total types in the repository."
-            delim = ":"
-            print "Title",delim,"filename",delim,"Template ID"
-            for t in types:
-                print t['title'],delim,t['filename'],delim,t['id']
+            print_xsd_records(types)
     
     elif args['types_current']:
         types = mdcs.types.select_current(
@@ -644,11 +647,7 @@ def types(args):
         if args['download_xsd']:
             write_xsd_records(types)
         else:
-            print "There are",len(types)," current types in the repository."
-            delim = ":"
-            print "Title",delim,"filename",delim,"Template ID"
-            for t in types:
-                print t['title'],delim,t['filename'],delim,t['id']
+            print_xsd_records(types)
     
     elif args['types_find']:
         type_id = mdcs.types.current_id(
