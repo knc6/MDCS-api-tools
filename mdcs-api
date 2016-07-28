@@ -735,7 +735,7 @@ def recursive_upload_xsd(xsd_name):
             title=name)
         if xsd_id is None:
             print "uploading",name,"as",xsd_type
-            response,r_data = mdcs.types.add(
+            response = mdcs.types.add(
                 xsd_name,
                 name,
                 args['host'],
@@ -761,7 +761,7 @@ def recursive_upload_xsd(xsd_name):
             title=name)
         if xsd_id is None:
             print "uploading",name,"as",xsd_type
-            response,r_data = mdcs.templates.add(
+            response = mdcs.templates.add(
                 xsd_name,
                 name,
                 args['host'],
