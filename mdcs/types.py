@@ -1,5 +1,6 @@
 #! /usr/bin/env python
 import requests
+from utils import check_response
 
 def add(filename,title,host,user,pswd,cert=None,version=None,dependencies=None):
     url = host.strip("/") + "/rest/types/add"
@@ -15,13 +16,8 @@ def add(filename,title,host,user,pswd,cert=None,version=None,dependencies=None):
     if dependencies: data['dependencies[]'] = dependencies
     
     r = requests.post(url, data=data, auth=(user, pswd), verify=cert)
-    
-    if int(r.status_code)==201:
-        return int(r.status_code),r.json()
-    else:
-        return int(r.status_code)
+    return check_response(r)
 
-# API method appears to be broken
 def select(host,user,pswd,cert=None,ID=None,filename=None,title=None,version=None,typeVersion=None,Hash=None):
     url = host.strip("/") + "/rest/types/select"
     params = dict()
@@ -32,7 +28,7 @@ def select(host,user,pswd,cert=None,ID=None,filename=None,title=None,version=Non
     if typeVersion: params['typeVersion']=typeVersion
     if Hash: params['hash']=Hash
     r = requests.get(url, params=params, auth=(user, pswd), verify=cert)
-    return r.json()
+    return check_response(r)
 
 def delete(ID,host,user,pswd,cert=None,next=None):
     url = host.strip("/") + "/rest/types/delete"
@@ -40,27 +36,24 @@ def delete(ID,host,user,pswd,cert=None,next=None):
     params['id']=ID
     if next: params['next']=next
     r = requests.delete(url, params=params, auth=(user, pswd), verify=cert)
-    if int(r.status_code)==204:
-        return "Successful deletion of: "+ID
-    else:
-        return r.json()
+    return check_response(r)
 
 def restore(ID,host,user,pswd,cert=None):
     url = host.strip("/") + "/rest/types/restore"
     params = dict()
     params['id']=ID
     r = requests.get(url, params=params, auth=(user, pswd), verify=cert)
-    return r.json()
+    return check_response(r)
 
 def select_all(host,user,pswd,cert=None):
     url = host.strip("/") + "/rest/types/select/all"
     r = requests.get(url, auth=(user, pswd), verify=cert)
-    return r.json()
+    return check_response(r)
 
 def versions_select_all(host,user,pswd,cert=None):
     url = host.strip("/") + "/rest/types/versions/select/all"
     r = requests.get(url, auth=(user, pswd), verify=cert)
-    return r.json()
+    return check_response(r)
 
 def current_id(host,user,pswd,cert=None,filename=None,title=None):
     types = select_all(host,user,pswd,cert)
