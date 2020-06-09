@@ -15,6 +15,7 @@ setup(
     license=license,
     install_requires=[
         'requests',
+        'blob',
         'xmltodict',
     ],
     packages=find_packages(exclude=('tests', 'docs'))
